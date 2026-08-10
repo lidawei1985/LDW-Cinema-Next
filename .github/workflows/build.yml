@@ -109,8 +109,23 @@ jobs:
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | head -1)
           "$APKSIGNER" sign --ks "$KEY" --ks-key-alias ldwl --ks-pass pass:android \
             --key-pass pass:android --out base/app/build/outputs/apk/release/app-release-signed.apk "$UNSIGNED"
-      - name: 上传 APK
+      - name: 上传 APK（artifact 备份）
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: base/app/build/outputs/apk/release/app-release-signed.apk
+      - name: 删除旧 app-latest Release/Tag（若存在，便于覆盖发布）
+        continue-on-error: true
+        run: |
+          gh release delete app-latest --yes -R lidawei1985/LDW-Cinema-Next || true
+          gh api -X DELETE repos/lidawei1985/LDW-Cinema-Next/git/refs/tags/app-latest || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 发布 APK 到 Release app-latest（稳定下载链接）
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app-latest
+          name: 安卓正式 APK（TVBoxOS 底座，已签名）
+          files: base/app/build/outputs/apk/release/app-release-signed.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
