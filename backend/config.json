@@ -1,0 +1,50 @@
+{
+  "app": {
+    "name": "LDW-Cinema-Next",
+    "package": "com.ldw.cinema.next",
+    "versionCode": 1,
+    "versionName": "0.1.0-next"
+  },
+  "schedule": {
+    "enabled": true,
+    "intervalHours": 6,
+    "runOnStart": true
+  },
+  "aggregator": {
+    "timeoutSeconds": 12,
+    "maxSources": 60,
+    "upstreams": [
+      "https://cdn.jsdelivr.net/gh/lidawei1985/LDW-Cinema-v3@main/combined.json",
+      "https://raw.githubusercontent.com/lidawei1985/LDW-Cinema-v3/main/combined.json"
+    ],
+    "samplesFallback": "samples/sample_sources.json",
+    "allowSamplesWhenAllUpstreamsFail": true
+  },
+  "validation": {
+    "minHealth": 60,
+    "probeSearch": true,
+    "probeSearchQuery": "test",
+    "probePlay": false,
+    "maxProbePerSource": 1
+  },
+  "liveDiscovery": {
+    "timeoutSeconds": 12,
+    "maxChannelsProbe": 3,
+    "minHealth": 50
+  },
+  "output": {
+    "posterProxy": "https://wsrv.nl/?url={url}&w=300&h=400&output=webp&q=80",
+    "distDir": "dist",
+    "combinedFile": "combined.json",
+    "liveFile": "live.json",
+    "healthFile": "state/health.json",
+    "autoPromote": true,
+    "requireApprovalForNew": true,
+    "bootstrapIncludeSamples": true
+  },
+  "api": {
+    "host": "0.0.0.0",
+    "port": 8787,
+    "enabled": true
+  }
+}

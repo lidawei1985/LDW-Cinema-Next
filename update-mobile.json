@@ -1,0 +1,14 @@
+{
+  "packageName": "com.ldw.cinema.next",
+  "versionCode": 1,
+  "versionName": "0.1.0-next",
+  "apkUrl": "https://ghproxy.net/https://github.com/lidawei1985/LDW-Cinema-Next/releases/download/v1.0/app-release.apk",
+  "apkUrls": [
+    "https://ghproxy.net/https://github.com/lidawei1985/LDW-Cinema-Next/releases/download/v1.0/app-release.apk",
+    "https://mirror.ghproxy.com/https://github.com/lidawei1985/LDW-Cinema-Next/releases/download/v1.0/app-release.apk",
+    "https://github.com/lidawei1985/LDW-Cinema-Next/releases/download/v1.0/app-release.apk"
+  ],
+  "sha256": "",
+  "changelog": "LDW-Cinema-Next 首个版本：多镜像更新、搜索联想、一致性路由、自维护片源接入。",
+  "force": false
+}

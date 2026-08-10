@@ -1,0 +1,48 @@
+{
+  "sites": [
+    {
+      "key": "dygx",
+      "name": "电影光速",
+      "type": "normal",
+      "api": "https://example-spider-a.com/api",
+      "searchable": 1,
+      "playable": 1,
+      "group": "电影"
+    },
+    {
+      "key": "tvhot",
+      "name": "热播剧场",
+      "type": "spider",
+      "api": "https://example-spider-b.com/",
+      "searchable": 1,
+      "playable": 1,
+      "group": "电视剧"
+    },
+    {
+      "key": "cartoon",
+      "name": "动漫星球",
+      "type": "normal",
+      "api": "https://example-spider-c.com/api",
+      "searchable": 1,
+      "playable": 1,
+      "group": "动漫"
+    },
+    {
+      "key": "doc",
+      "name": "纪录片库",
+      "type": "normal",
+      "api": "https://example-spider-d.com/api",
+      "searchable": 0,
+      "playable": 1,
+      "group": "纪录片"
+    }
+  ],
+  "lives": [
+    {
+      "name": "综合直播",
+      "type": "m3u",
+      "url": "https://example-live.com/tv.m3u",
+      "group": "直播"
+    }
+  ]
+}

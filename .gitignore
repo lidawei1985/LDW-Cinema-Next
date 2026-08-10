@@ -1,0 +1,11 @@
+*.pyc
+__pycache__/
+backend/state/
+backend/dist/
+backend/pending/
+backend/*.jks
+apk_patch/
+.idea/
+*.iml
+build/
+local.properties

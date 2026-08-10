@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- 更新下载的 APK 临时目录 -->
+    <cache-path name="updates" path="ldw_updates/" />
+    <external-cache-path name="updates_ext" path="ldw_updates/" />
+    <files-path name="crash" path="crash/" />
+</paths>
