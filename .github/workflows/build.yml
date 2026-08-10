@@ -63,9 +63,8 @@ jobs:
       - name: 设置 Android SDK (platform-30)
         uses: android-actions/setup-android@v3
         with:
-          api-level: 30
-          build-tools: "30.0.3"
           accept-android-sdk-licenses: true
+          packages: 'platforms;android-30 build-tools;30.0.3'
       - name: 配置 SDK 路径
         run: echo "sdk.dir=$ANDROID_HOME" > base/local.properties
       - name: 编译 Release
