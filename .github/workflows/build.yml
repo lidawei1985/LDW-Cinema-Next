@@ -100,15 +100,30 @@ jobs:
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_11_X64 }}
         run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
-      - name: 签名 APK（CI 临时密钥，正式发布请改用仓库 Secrets 中的自有密钥）
+      - name: 签名 APK（优先自有密钥 Secrets，缺失则临时密钥）
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_STORE_PASS: ${{ secrets.KEY_STORE_PASS }}
+          KEY_PASS: ${{ secrets.KEY_PASS }}
         run: |
-          KEY="$RUNNER_TEMP/ldwl.jks"
-          keytool -genkey -v -keystore "$KEY" -keyalg RSA -keysize 2048 -validity 3650 \
-            -alias ldwl -storepass android -keypass android -dname "CN=LDW,O=LDW,C=CN"
           UNSIGNED=$(ls base/app/build/outputs/apk/release/*-unsigned.apk | head -1)
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | head -1)
-          "$APKSIGNER" sign --ks "$KEY" --ks-key-alias ldwl --ks-pass pass:android \
-            --key-pass pass:android --out base/app/build/outputs/apk/release/app-release-signed.apk "$UNSIGNED"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            KEY="$RUNNER_TEMP/ldwl.jks"
+            echo "$KEYSTORE_BASE64" | base64 -d > "$KEY"
+            "$APKSIGNER" sign --ks "$KEY" --ks-key-alias "$KEY_ALIAS" \
+              --ks-pass "pass:$KEY_STORE_PASS" --key-pass "pass:$KEY_PASS" \
+              --out base/app/build/outputs/apk/release/app-release-signed.apk "$UNSIGNED"
+            echo "已使用自有签名密钥签名（alias=$KEY_ALIAS）"
+          else
+            KEY="$RUNNER_TEMP/ldwl.jks"
+            keytool -genkey -v -keystore "$KEY" -keyalg RSA -keysize 2048 -validity 3650 \
+              -alias ldwl -storepass android -keypass android -dname "CN=LDW,O=LDW,C=CN"
+            "$APKSIGNER" sign --ks "$KEY" --ks-key-alias ldwl --ks-pass pass:android \
+              --key-pass pass:android --out base/app/build/outputs/apk/release/app-release-signed.apk "$UNSIGNED"
+            echo "未配置自有密钥，使用临时密钥签名（仅供测试，正式发布请到仓库 Settings→Secrets 配置 KEYSTORE_BASE64/KEY_ALIAS/KEY_STORE_PASS/KEY_PASS）"
+          fi
       - name: 上传 APK（artifact 备份）
         uses: actions/upload-artifact@v4
         with:
