@@ -6,13 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       base_repo:
-        description: "TVBox/CatVod 底座仓库 (owner/repo@ref)，留空则只构建后端"
+        description: "TVBox/CatVod 底座仓库 (owner/repo)，留空则用默认 lidawei1985/TVBoxOS"
         required: false
-        default: ""
-      base_token:
-        description: "访问底座仓库的 token（如私有）"
-        required: false
-        default: ""
+        default: "lidawei1985/TVBoxOS"
 
 permissions:
   contents: write
@@ -51,35 +47,41 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ---------- Android：构建 APK（规格 1/2/3） ----------
+  # ---------- Android：基于 TVBoxOS 底座自动编译正式 APK（规格 1/2/3 底座） ----------
   android:
-    if: ${{ inputs.base_repo != '' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with: { path: next }
-      - name: 检出底座仓库
+      - name: 检出底座源码
         uses: actions/checkout@v4
         with:
-          repository: ${{ inputs.base_repo }}
-          token: ${{ inputs.base_token }}
+          repository: ${{ github.event_name == 'workflow_dispatch' && inputs.base_repo != '' && inputs.base_repo || 'lidawei1985/TVBoxOS' }}
           path: base
-      - name: 叠加 next 自定义模块
-        run: |
-          cp -r next/app/src/main/java/com/ldw/cinema/next base/app/src/main/java/com/ldw/cinema/next
-          # 将 update-mobile.json 放到底座 assets，供 UpdateManager 使用
-          mkdir -p base/app/src/main/assets
-          cp next/backend/dist/combined.json base/app/src/main/assets/ 2>/dev/null || true
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
-      - uses: android-actions/setup-android@v3
+          java-version: "11"
+      - name: 设置 Android SDK (platform-30)
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 30
+          build-tools: "30.0.3"
+          accept-android-sdk-licenses: true
+      - name: 配置 SDK 路径
+        run: echo "sdk.dir=$ANDROID_HOME" > base/local.properties
       - name: 编译 Release
         working-directory: base
-        run: ./gradlew assembleRelease
+        run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+      - name: 签名 APK（CI 临时密钥，正式发布请改用仓库 Secrets 中的自有密钥）
+        run: |
+          KEY="$RUNNER_TEMP/ldwl.jks"
+          keytool -genkey -v -keystore "$KEY" -keyalg RSA -keysize 2048 -validity 3650 \
+            -alias ldwl -storepass android -keypass android -dname "CN=LDW,O=LDW,C=CN"
+          UNSIGNED=$(ls base/app/build/outputs/apk/release/*-unsigned.apk | head -1)
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | head -1)
+          "$APKSIGNER" sign --ks "$KEY" --ks-key-alias ldwl --ks-pass pass:android \
+            --key-pass pass:android --out base/app/build/outputs/apk/release/app-release-signed.apk "$UNSIGNED"
       - name: 上传 APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: base/app/build/outputs/apk/release/*.apk
+          path: base/app/build/outputs/apk/release/app-release-signed.apk
