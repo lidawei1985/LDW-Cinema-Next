@@ -73,6 +73,28 @@ jobs:
           packages: 'platforms;android-30 build-tools;30.0.3'
       - name: 配置 SDK 路径
         run: echo "sdk.dir=$ANDROID_HOME" > base/local.properties
+      - name: 修复 build.gradle（内联公共仓库，绕开 buildscript 闭包作用域限制）
+        run: |
+          python3 - <<'PY'
+          import re, pathlib
+          p = pathlib.Path('base/build.gradle')
+          s = p.read_text(encoding='utf-8')
+          repos = [
+              'gradlePluginPortal()',
+              'google()',
+              'mavenCentral()',
+              'maven { url "https://jitpack.io" }',
+              'maven { url "https://maven.aliyun.com/repository/releases" }',
+              'maven { url "https://maven.aliyun.com/repository/public" }',
+              'maven { url "https://storage.googleapis.com/r8-releases/raw" }',
+          ]
+          def repl(m):
+              indent = m.group(1)
+              return '\n'.join(indent + line for line in repos)
+          s2 = re.sub(r'\n([ \t]*)commonRepositories\(\)', repl, s)
+          p.write_text(s2, encoding='utf-8')
+          print('patched build.gradle, replaced', s.count('commonRepositories()'), 'call(s)')
+          PY
       - name: 编译 Release
         working-directory: base
         env:
