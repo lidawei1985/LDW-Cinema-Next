@@ -95,6 +95,13 @@ jobs:
           p.write_text(s2, encoding='utf-8')
           print('patched build.gradle, replaced', s.count('commonRepositories()'), 'call(s)')
           PY
+      - name: 注入递增 versionCode（保证更新器能识别新版本）
+        id: vc
+        run: |
+          VC=$(date +%s)
+          sed -i "s/versionCode 1/versionCode $VC/" base/app/build.gradle
+          echo "version_code=$VC" >> "$GITHUB_OUTPUT"
+          echo "injected versionCode = $VC"
       - name: 编译 Release
         working-directory: base
         env:
@@ -124,6 +131,32 @@ jobs:
               --key-pass pass:android --out base/app/build/outputs/apk/release/app-release-signed.apk "$UNSIGNED"
             echo "未配置自有密钥，使用临时密钥签名（仅供测试，正式发布请到仓库 Settings→Secrets 配置 KEYSTORE_BASE64/KEY_ALIAS/KEY_STORE_PASS/KEY_PASS）"
           fi
+      - name: 生成更新清单 update-mobile.json
+        env:
+          VC: ${{ steps.vc.outputs.version_code }}
+        run: |
+          python3 - <<'PY'
+          import os, hashlib, json
+          apk = 'base/app/build/outputs/apk/release/app-release-signed.apk'
+          h = hashlib.sha256(open(apk, 'rb').read()).hexdigest()
+          vc = int(os.environ['VC'])
+          data = {
+              "packageName": "com.github.tvbox.osc",
+              "versionCode": vc,
+              "versionName": "1.0." + os.environ['VC'],
+              "apkUrls": [
+                  "https://ghproxy.net/https://github.com/lidawei1985/LDW-Cinema-Next/releases/download/app-latest/app-release-signed.apk",
+                  "https://cdn.jsdelivr.net/gh/lidawei1985/LDW-Cinema-Next@app-latest/app-release-signed.apk",
+                  "https://mirror.ghproxy.com/https://github.com/lidawei1985/LDW-Cinema-Next/releases/download/app-latest/app-release-signed.apk",
+                  "https://github.com/lidawei1985/LDW-Cinema-Next/releases/download/app-latest/app-release-signed.apk"
+              ],
+              "sha256": h,
+              "changelog": "自动构建更新（TVBoxOS 底座 + 增强模块）",
+              "force": False
+          }
+          open('update-mobile.json', 'w').write(json.dumps(data, ensure_ascii=False, indent=2))
+          print("update-mobile.json written, versionCode =", vc, "sha256 =", h[:12], "...")
+          PY
       - name: 上传 APK（artifact 备份）
         uses: actions/upload-artifact@v4
         with:
@@ -141,6 +174,8 @@ jobs:
         with:
           tag_name: app-latest
           name: 安卓正式 APK（TVBoxOS 底座，已签名）
-          files: base/app/build/outputs/apk/release/app-release-signed.apk
+          files: |
+            base/app/build/outputs/apk/release/app-release-signed.apk
+            update-mobile.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
