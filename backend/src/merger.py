@@ -67,7 +67,9 @@ def merge(sources: list[Source], lives: list[LiveSource], cfg: dict,
         json.dump(combined, f, ensure_ascii=False, indent=2)
     with open(os.path.join(dist_path, out.get("liveFile", "live.json")), "w", encoding="utf-8") as f:
         json.dump({"lives": combined["lives"]}, f, ensure_ascii=False, indent=2)
-    with open(os.path.join(_ROOT, out.get("healthFile", "state/health.json")), "w", encoding="utf-8") as f:
+    health_path = os.path.join(_ROOT, out.get("healthFile", "state/health.json"))
+    os.makedirs(os.path.dirname(health_path), exist_ok=True)
+    with open(health_path, "w", encoding="utf-8") as f:
         json.dump(health.to_dict(), f, ensure_ascii=False, indent=2)
 
     return combined
