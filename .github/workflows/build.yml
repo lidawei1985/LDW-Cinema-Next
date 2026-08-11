@@ -73,6 +73,28 @@ jobs:
           packages: 'platforms;android-30 build-tools;30.0.3'
       - name: 配置 SDK 路径
         run: echo "sdk.dir=$ANDROID_HOME" > base/local.properties
+      - name: 清理不兼容的新版 SDK 组件（仅保留 android-30 / build-tools;30.0.3）
+        run: |
+          cd "$ANDROID_HOME"
+          echo "== 清理前 =="; ls platforms build-tools 2>/dev/null
+          # AGP 4.2.2 的 SDK 解析器无法读取高版本平台(package.xml 含 base-extension/extension-level)，
+          # 扫描到 android-34/35/36/37 等会抛 NumberFormatException。只保留 compileSdk=30 所需组件。
+          for d in platforms/android-*; do
+            [ -d "$d" ] || continue
+            case "${d##*/}" in
+              android-30) ;;
+              *) echo "remove $d"; rm -rf "$d" ;;
+            esac
+          done
+          for d in build-tools/*; do
+            [ -d "$d" ] || continue
+            case "${d##*/}" in
+              30.0.3) ;;
+              *) echo "remove $d"; rm -rf "$d" ;;
+            esac
+          done
+          rm -rf system-images emulator ndk* cmake patcher cmdline-tools
+          echo "== 清理后 =="; ls platforms build-tools 2>/dev/null
       - name: 修复 build.gradle（内联公共仓库，绕开 buildscript 闭包作用域限制）
         run: |
           python3 - <<'PY'
